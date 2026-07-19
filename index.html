@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Macros &amp; Maxes</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --text: #1c1e21;
+    --muted: #65676b;
+    --accent: #2563eb;
+    --accent-dark: #1d4ed8;
+    --green: #16a34a;
+    --red: #dc2626;
+    --border: #e0e2e6;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 16px 12px 80px; }
+  header { text-align: center; padding: 20px 0 12px; }
+  header h1 { font-size: 1.5rem; letter-spacing: -0.5px; }
+  header p { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .tabs button {
+    flex: 1;
+    padding: 14px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .tabs button.active { background: var(--accent); color: #fff; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 1.05rem; margin-bottom: 12px; }
+  .card h2 small { color: var(--muted); font-weight: 400; font-size: 0.8rem; }
+
+  label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+  input, select {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text);
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+
+  .row { display: flex; gap: 8px; }
+  .row > div { flex: 1; }
+  .mt { margin-top: 10px; }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 12px;
+  }
+  .btn:active { background: var(--accent-dark); }
+  .btn-small {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    background: none;
+    border: none;
+    color: var(--red);
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  /* Progress bars */
+  .stat { margin-bottom: 12px; }
+  .stat .top { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; }
+  .stat .top .name { font-weight: 600; }
+  .stat .top .nums { color: var(--muted); }
+  .bar { height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; }
+  .bar > div { height: 100%; background: var(--accent); border-radius: 5px; transition: width 0.3s; }
+  .bar > div.over { background: var(--red); }
+  .bar > div.done { background: var(--green); }
+
+  /* Lists */
+  ul.items { list-style: none; }
+  ul.items li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+  }
+  ul.items li:last-child { border-bottom: none; }
+  .item-name { font-weight: 600; font-size: 0.95rem; }
+  .item-sub { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+  .item-val { font-weight: 700; white-space: nowrap; }
+  .empty { color: var(--muted); text-align: center; padding: 12px 0; font-size: 0.9rem; }
+
+  /* 1RM result */
+  .orm-result {
+    text-align: center;
+    padding: 10px 0 4px;
+  }
+  .orm-result .big { font-size: 2.2rem; font-weight: 800; color: var(--accent); }
+  .orm-result .sub { color: var(--muted); font-size: 0.85rem; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: center; padding: 8px 4px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+  tr:last-child td { border-bottom: none; }
+  td.w { font-weight: 700; }
+
+  .hidden { display: none; }
+  .date-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .date-nav button {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .date-nav input { text-align: center; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🏋️ Macros &amp; Maxes</h1>
+    <p>Track your food. Know your maxes. Keep it simple.</p>
+  </header>
+
+  <div class="tabs">
+    <button id="tabMacros" class="active" onclick="showTab('macros')">Macros</button>
+    <button id="tabMaxes" onclick="showTab('maxes')">Max Lifts</button>
+  </div>
+
+  <!-- ============ MACROS ============ -->
+  <div id="pageMacros">
+    <div class="date-nav">
+      <button onclick="changeDay(-1)" aria-label="Previous day">&#9664;</button>
+      <input type="date" id="datePicker" onchange="renderMacros()">
+      <button onclick="changeDay(1)" aria-label="Next day">&#9654;</button>
+    </div>
+
+    <div class="card">
+      <h2>Today's Totals</h2>
+      <div id="totals"></div>
+    </div>
+
+    <div class="card">
+      <h2>Add Food</h2>
+      <form id="foodForm">
+        <label for="foodName">Food</label>
+        <input id="foodName" placeholder="e.g. Chicken and rice" required>
+        <div class="row mt">
+          <div>
+            <label for="foodCal">Calories</label>
+            <input id="foodCal" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required>
+          </div>
+          <div>
+            <label for="foodP">Protein (g)</label>
+            <input id="foodP" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
+          </div>
+        </div>
+        <div class="row mt">
+          <div>
+            <label for="foodC">Carbs (g)</label>
+            <input id="foodC" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
+          </div>
+          <div>
+            <label for="foodF">Fat (g)</label>
+            <input id="foodF" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
+          </div>
+        </div>
+        <button class="btn" type="submit">Add Food</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Food Log</h2>
+      <ul class="items" id="foodList"></ul>
+    </div>
+
+    <div class="card">
+      <h2>Daily Goals <small>(tap to edit, saves automatically)</small></h2>
+      <div class="row">
+        <div>
+          <label for="goalCal">Calories</label>
+          <input id="goalCal" type="number" min="0" step="1" inputmode="numeric">
+        </div>
+        <div>
+          <label for="goalP">Protein (g)</label>
+          <input id="goalP" type="number" min="0" step="1" inputmode="numeric">
+        </div>
+      </div>
+      <div class="row mt">
+        <div>
+          <label for="goalC">Carbs (g)</label>
+          <input id="goalC" type="number" min="0" step="1" inputmode="numeric">
+        </div>
+        <div>
+          <label for="goalF">Fat (g)</label>
+          <input id="goalF" type="number" min="0" step="1" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MAXES ============ -->
+  <div id="pageMaxes" class="hidden">
+    <div class="card">
+      <h2>Calculate Your Max</h2>
+      <form id="liftForm">
+        <label for="liftName">Exercise</label>
+        <input id="liftName" list="exerciseList" placeholder="e.g. Bench Press" required>
+        <datalist id="exerciseList">
+          <option value="Bench Press"></option>
+          <option value="Squat"></option>
+          <option value="Deadlift"></option>
+          <option value="Overhead Press"></option>
+          <option value="Barbell Row"></option>
+        </datalist>
+        <div class="row mt">
+          <div>
+            <label for="liftWeight">Weight (lbs)</label>
+            <input id="liftWeight" type="number" min="1" step="0.5" inputmode="decimal" placeholder="0" required>
+          </div>
+          <div>
+            <label for="liftReps">Reps</label>
+            <input id="liftReps" type="number" min="1" max="15" step="1" inputmode="numeric" placeholder="0" required>
+          </div>
+        </div>
+        <button class="btn" type="submit">Calculate &amp; Save</button>
+      </form>
+      <div id="ormResult"></div>
+    </div>
+
+    <div class="card" id="repTableCard" style="display:none">
+      <h2 id="repTableTitle">Rep Maxes</h2>
+      <table>
+        <thead><tr><th>Reps</th><th>Weight</th><th>% of 1RM</th></tr></thead>
+        <tbody id="repTableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Personal Records <small>(best estimated 1RM per exercise)</small></h2>
+      <ul class="items" id="prList"></ul>
+    </div>
+
+    <div class="card">
+      <h2>Lift History</h2>
+      <ul class="items" id="liftList"></ul>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- storage ----------
+const load = (key, fallback) => {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+  catch { return fallback; }
+};
+const save = (key, val) => localStorage.setItem(key, JSON.stringify(val));
+
+let foods = load('mm_foods', {});           // { "2026-07-19": [ {id,name,cal,p,c,f}, ... ] }
+let goals = load('mm_goals', { cal: 2200, p: 160, c: 220, f: 70 });
+let lifts = load('mm_lifts', []);           // [ {id, name, weight, reps, orm, date} ]
+
+// ---------- tabs ----------
+function showTab(tab) {
+  const macros = tab === 'macros';
+  document.getElementById('pageMacros').classList.toggle('hidden', !macros);
+  document.getElementById('pageMaxes').classList.toggle('hidden', macros);
+  document.getElementById('tabMacros').classList.toggle('active', macros);
+  document.getElementById('tabMaxes').classList.toggle('active', !macros);
+}
+
+// ---------- macros ----------
+const todayStr = () => {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+};
+const datePicker = document.getElementById('datePicker');
+datePicker.value = todayStr();
+
+function changeDay(delta) {
+  const d = new Date(datePicker.value + 'T12:00:00');
+  d.setDate(d.getDate() + delta);
+  datePicker.value = d.toISOString().slice(0, 10);
+  renderMacros();
+}
+
+document.getElementById('foodForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const day = datePicker.value;
+  const entry = {
+    id: Date.now(),
+    name: document.getElementById('foodName').value.trim(),
+    cal: +document.getElementById('foodCal').value || 0,
+    p: +document.getElementById('foodP').value || 0,
+    c: +document.getElementById('foodC').value || 0,
+    f: +document.getElementById('foodF').value || 0,
+  };
+  (foods[day] = foods[day] || []).push(entry);
+  save('mm_foods', foods);
+  e.target.reset();
+  document.getElementById('foodName').focus();
+  renderMacros();
+});
+
+function deleteFood(day, id) {
+  foods[day] = (foods[day] || []).filter(x => x.id !== id);
+  if (!foods[day].length) delete foods[day];
+  save('mm_foods', foods);
+  renderMacros();
+}
+
+function statBar(name, val, goal, unit) {
+  const pct = goal > 0 ? Math.min(100, (val / goal) * 100) : 0;
+  const cls = goal > 0 && val > goal ? 'over' : (pct >= 100 ? 'done' : '');
+  return `<div class="stat">
+    <div class="top"><span class="name">${name}</span><span class="nums">${Math.round(val)} / ${goal} ${unit}</span></div>
+    <div class="bar"><div class="${cls}" style="width:${pct}%"></div></div>
+  </div>`;
+}
+
+function renderMacros() {
+  const day = datePicker.value;
+  const list = foods[day] || [];
+  const t = list.reduce((a, x) => ({ cal: a.cal + x.cal, p: a.p + x.p, c: a.c + x.c, f: a.f + x.f }),
+    { cal: 0, p: 0, c: 0, f: 0 });
+
+  document.getElementById('totals').innerHTML =
+    statBar('Calories', t.cal, goals.cal, 'kcal') +
+    statBar('Protein', t.p, goals.p, 'g') +
+    statBar('Carbs', t.c, goals.c, 'g') +
+    statBar('Fat', t.f, goals.f, 'g');
+
+  const ul = document.getElementById('foodList');
+  ul.innerHTML = list.length ? list.map(x => `
+    <li>
+      <div>
+        <div class="item-name">${escapeHtml(x.name)}</div>
+        <div class="item-sub">P ${x.p}g &middot; C ${x.c}g &middot; F ${x.f}g</div>
+      </div>
+      <span class="item-val">${x.cal} kcal</span>
+      <button class="btn-small" onclick="deleteFood('${day}', ${x.id})">✕</button>
+    </li>`).join('') : '<li class="empty">Nothing logged yet — add your first food above.</li>';
+}
+
+// goals: save on change
+['goalCal', 'goalP', 'goalC', 'goalF'].forEach(id => {
+  const el = document.getElementById(id);
+  const key = { goalCal: 'cal', goalP: 'p', goalC: 'c', goalF: 'f' }[id];
+  el.value = goals[key];
+  el.addEventListener('change', () => {
+    goals[key] = +el.value || 0;
+    save('mm_goals', goals);
+    renderMacros();
+  });
+});
+
+// ---------- maxes ----------
+// Epley formula: 1RM = weight * (1 + reps / 30)
+function estimate1RM(weight, reps) {
+  return reps === 1 ? weight : weight * (1 + reps / 30);
+}
+// weight you can lift for N reps, given a 1RM (inverse of Epley)
+function weightForReps(orm, reps) {
+  return reps === 1 ? orm : orm / (1 + reps / 30);
+}
+const round5 = x => Math.round(x / 5) * 5;
+
+document.getElementById('liftForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = document.getElementById('liftName').value.trim();
+  const weight = +document.getElementById('liftWeight').value;
+  const reps = +document.getElementById('liftReps').value;
+  if (!name || !weight || !reps) return;
+
+  const orm = estimate1RM(weight, reps);
+  lifts.unshift({ id: Date.now(), name, weight, reps, orm, date: todayStr() });
+  save('mm_lifts', lifts);
+  showOrm(name, weight, reps, orm);
+  renderMaxes();
+});
+
+function showOrm(name, weight, reps, orm) {
+  document.getElementById('ormResult').innerHTML = `
+    <div class="orm-result">
+      <div class="big">${Math.round(orm)} lbs</div>
+      <div class="sub">Estimated 1-rep max &middot; ${escapeHtml(name)}: ${weight} lbs &times; ${reps}</div>
+    </div>`;
+  const body = document.getElementById('repTableBody');
+  body.innerHTML = Array.from({ length: 12 }, (_, i) => {
+    const r = i + 1;
+    const w = weightForReps(orm, r);
+    return `<tr><td>${r}</td><td class="w">${round5(w)} lbs</td><td>${Math.round((w / orm) * 100)}%</td></tr>`;
+  }).join('');
+  document.getElementById('repTableTitle').textContent = `Rep Maxes — ${name}`;
+  document.getElementById('repTableCard').style.display = '';
+}
+
+function deleteLift(id) {
+  lifts = lifts.filter(x => x.id !== id);
+  save('mm_lifts', lifts);
+  renderMaxes();
+}
+
+function renderMaxes() {
+  // PRs: best estimated 1RM per exercise
+  const best = {};
+  lifts.forEach(x => {
+    const key = x.name.toLowerCase();
+    if (!best[key] || x.orm > best[key].orm) best[key] = x;
+  });
+  const prs = Object.values(best).sort((a, b) => b.orm - a.orm);
+
+  document.getElementById('prList').innerHTML = prs.length ? prs.map(x => `
+    <li>
+      <div>
+        <div class="item-name">${escapeHtml(x.name)}</div>
+        <div class="item-sub">${x.weight} lbs &times; ${x.reps} on ${x.date}</div>
+      </div>
+      <span class="item-val">${Math.round(x.orm)} lbs</span>
+    </li>`).join('') : '<li class="empty">No lifts yet — log one above.</li>';
+
+  document.getElementById('liftList').innerHTML = lifts.length ? lifts.map(x => `
+    <li>
+      <div>
+        <div class="item-name">${escapeHtml(x.name)}</div>
+        <div class="item-sub">${x.weight} lbs &times; ${x.reps} &middot; ${x.date}</div>
+      </div>
+      <span class="item-val">${Math.round(x.orm)} lbs</span>
+      <button class="btn-small" onclick="deleteLift(${x.id})">✕</button>
+    </li>`).join('') : '<li class="empty">No history yet.</li>';
+}
+
+// ---------- util ----------
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+renderMacros();
+renderMaxes();
+</script>
+</body>
+</html>
