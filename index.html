@@ -241,6 +241,43 @@
   tr:last-child td { border-bottom: none; }
   td.w { font-weight: 700; color: var(--red); }
 
+  /* Food search suggestions */
+  .sug-box { position: relative; }
+  .suggestions {
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    z-index: 10;
+    background: #14171b;
+    border: 1px solid var(--steel);
+    max-height: 280px;
+    overflow-y: auto;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+  }
+  .suggestions button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 9px 10px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #22262c;
+    color: var(--text);
+    font-family: var(--body-font);
+    cursor: pointer;
+  }
+  .suggestions button:hover, .suggestions button:focus { background: #232932; }
+  .sug-name { font-weight: 700; font-size: 0.9rem; }
+  .sug-sub { color: var(--muted); font-size: 0.74rem; margin-top: 1px; }
+  .sug-label {
+    padding: 7px 10px 4px;
+    color: var(--red);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #22262c;
+  }
+
   .hidden { display: none; }
   .date-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
   .date-nav button {
@@ -282,10 +319,13 @@
     </div>
 
     <div class="card">
-      <h2>Add Food</h2>
+      <h2>Add Food <small>(type 2+ letters to search the food database)</small></h2>
       <form id="foodForm">
         <label for="foodName">Food</label>
-        <input id="foodName" placeholder="e.g. Chicken and rice" required>
+        <div class="sug-box">
+          <input id="foodName" placeholder="e.g. Chicken breast" autocomplete="off" required>
+          <div id="foodSug" class="suggestions hidden"></div>
+        </div>
         <div class="row mt">
           <div>
             <label for="foodCal">Calories</label>
@@ -481,6 +521,179 @@ function renderMacros() {
       <span class="item-val">${x.cal} kcal</span>
       <button class="btn-small" onclick="deleteFood('${day}', ${x.id})">✕</button>
     </li>`).join('') : '<li class="empty">Nothing logged yet — add your first food above.</li>';
+}
+
+// ---------- food database ----------
+// Built-in common foods: [name, serving, kcal, protein g, carbs g, fat g]
+const FOODS = [
+  ["Chicken breast, grilled","100 g",165,31,0,3.6],
+  ["Chicken thigh, cooked","100 g",209,26,0,10.9],
+  ["Chicken nuggets","6 pieces",270,14,16,17],
+  ["Ground beef 85%, cooked","100 g",250,26,0,15],
+  ["Ground beef 93%, cooked","100 g",182,25,0,8],
+  ["Sirloin steak, cooked","100 g",206,29,0,9],
+  ["Pork chop, cooked","100 g",231,25,0,14],
+  ["Bacon","2 slices",87,6,0,7],
+  ["Salmon, cooked","100 g",208,20,0,13],
+  ["Tuna, canned in water","1 can (142 g)",128,28,0,1],
+  ["Tilapia, cooked","100 g",128,26,0,3],
+  ["Shrimp, cooked","100 g",99,24,0,0],
+  ["Egg","1 large",72,6,0,5],
+  ["Egg white","1 large",17,4,0,0],
+  ["Turkey breast, cooked","100 g",147,30,0,2],
+  ["Ground turkey 93%, cooked","100 g",200,27,0,10],
+  ["Deli ham","2 oz",60,10,2,2],
+  ["Tofu, firm","100 g",76,8,2,5],
+  ["Whey protein","1 scoop",120,24,3,2],
+  ["Protein bar","1 bar",200,20,22,7],
+  ["Beef jerky","1 oz",80,9,6,3],
+  ["Whole milk","1 cup",149,8,12,8],
+  ["2% milk","1 cup",122,8,12,5],
+  ["Skim milk","1 cup",83,8,12,0],
+  ["Greek yogurt, nonfat","170 g cup",100,17,6,1],
+  ["Cottage cheese 2%","1 cup",183,24,11,5],
+  ["Cheddar cheese","1 oz",114,6,1,9],
+  ["Mozzarella cheese","1 oz",85,6,1,6],
+  ["String cheese","1 stick",80,7,1,6],
+  ["Butter","1 tbsp",102,0,0,12],
+  ["White rice, cooked","1 cup",205,4,45,0],
+  ["Brown rice, cooked","1 cup",218,5,46,2],
+  ["Pasta, cooked","1 cup",220,8,43,1],
+  ["White bread","1 slice",75,3,14,1],
+  ["Whole wheat bread","1 slice",81,4,14,1],
+  ["Bagel, plain","1 bagel",289,11,56,2],
+  ["Flour tortilla","1 large",144,4,24,4],
+  ["Oatmeal, dry","1/2 cup",150,5,27,3],
+  ["Baked potato","1 medium",161,4,37,0],
+  ["Sweet potato, baked","1 medium",103,2,24,0],
+  ["Quinoa, cooked","1 cup",222,8,39,4],
+  ["Pancake","1 (4 in)",86,2,11,4],
+  ["Granola","1/2 cup",210,5,32,7],
+  ["Banana","1 medium",105,1,27,0],
+  ["Apple","1 medium",95,1,25,0],
+  ["Orange","1 medium",62,1,15,0],
+  ["Strawberries","1 cup",49,1,12,1],
+  ["Blueberries","1 cup",84,1,21,1],
+  ["Grapes","1 cup",104,1,27,0],
+  ["Avocado","1/2 fruit",120,2,6,11],
+  ["Broccoli, cooked","1 cup",55,4,11,1],
+  ["Spinach, raw","1 cup",7,1,1,0],
+  ["Carrot","1 medium",25,1,6,0],
+  ["Corn","1 cup",143,5,31,2],
+  ["Green beans","1 cup",44,2,10,0],
+  ["Mixed greens salad","2 cups",15,1,3,0],
+  ["Peanut butter","2 tbsp",188,8,6,16],
+  ["Almonds","1 oz (23)",164,6,6,14],
+  ["Peanuts","1 oz",161,7,5,14],
+  ["Cashews","1 oz",157,5,9,12],
+  ["Olive oil","1 tbsp",119,0,0,14],
+  ["Mayonnaise","1 tbsp",94,0,0,10],
+  ["Black beans, cooked","1 cup",227,15,41,1],
+  ["Chickpeas, cooked","1 cup",269,15,45,4],
+  ["Lentils, cooked","1 cup",230,18,40,1],
+  ["Hummus","2 tbsp",70,2,4,5],
+  ["Cheeseburger, fast food","1 burger",300,15,32,13],
+  ["Hamburger, fast food","1 burger",250,12,31,9],
+  ["French fries","medium",320,5,43,15],
+  ["Pepperoni pizza","1 slice",298,13,34,12],
+  ["Cheese pizza","1 slice",272,12,34,10],
+  ["Chicken burrito","1 burrito",850,45,90,32],
+  ["Hot dog with bun","1",314,11,24,19],
+  ["Mac and cheese","1 cup",350,10,48,12],
+  ["PB&J sandwich","1 sandwich",378,12,48,16],
+  ["Grilled cheese sandwich","1 sandwich",390,11,34,23],
+  ["Chicken Caesar salad","1 salad",470,37,14,28],
+  ["Ramen noodles","1 pack",380,7,52,14],
+  ["California roll","8 pieces",255,9,38,7],
+  ["Beef taco, hard shell","1 taco",170,8,13,9],
+  ["Coca-Cola","12 oz can",140,0,39,0],
+  ["Orange juice","1 cup",112,2,26,1],
+  ["Beer","12 oz",153,2,13,0],
+  ["Light beer","12 oz",103,1,6,0],
+  ["Red wine","5 oz",125,0,4,0],
+  ["Latte, 2% milk","16 oz",190,12,18,7],
+  ["Chocolate chip cookie","1 large",160,2,21,8],
+  ["Ice cream","1/2 cup",137,2,16,7],
+  ["Potato chips","1 oz",152,2,15,10],
+  ["Popcorn, popped","3 cups",93,3,19,1],
+  ["Dark chocolate","1 oz",170,2,13,12],
+  ["Glazed donut","1 donut",240,4,31,11],
+];
+
+const foodInput = document.getElementById('foodName');
+const sugBox = document.getElementById('foodSug');
+let currentSug = [];   // normalized {name, serving, cal, p, c, f}
+let offResults = [];   // online results for offQuery
+let offQuery = '';
+let offTimer = null;
+
+foodInput.addEventListener('input', () => {
+  clearTimeout(offTimer);
+  const q = foodInput.value.trim().toLowerCase();
+  if (offQuery !== q) offResults = [];
+  renderSug(q);
+  if (q.length >= 3) offTimer = setTimeout(() => searchOnline(q), 450);
+});
+foodInput.addEventListener('focus', () => renderSug(foodInput.value.trim().toLowerCase()));
+document.addEventListener('click', e => {
+  if (!e.target.closest('.sug-box')) sugBox.classList.add('hidden');
+});
+
+function renderSug(q) {
+  if (q.length < 2) { sugBox.classList.add('hidden'); return; }
+  const local = FOODS
+    .filter(f => f[0].toLowerCase().includes(q))
+    .slice(0, 6)
+    .map(f => ({ name: f[0], serving: f[1], cal: f[2], p: f[3], c: f[4], f: f[5] }));
+  currentSug = local.concat(offQuery === q ? offResults : []);
+  if (!currentSug.length) { sugBox.classList.add('hidden'); return; }
+
+  let html = '';
+  currentSug.forEach((it, i) => {
+    if (i === local.length) html += '<div class="sug-label">Online results &middot; Open Food Facts</div>';
+    html += `<button type="button" data-i="${i}">
+      <div class="sug-name">${escapeHtml(it.name)}</div>
+      <div class="sug-sub">${escapeHtml(it.serving)} &middot; ${Math.round(it.cal)} kcal &middot; P ${Math.round(it.p)}g &middot; C ${Math.round(it.c)}g &middot; F ${Math.round(it.f)}g</div>
+    </button>`;
+  });
+  sugBox.innerHTML = html;
+  sugBox.classList.remove('hidden');
+}
+
+sugBox.addEventListener('click', e => {
+  const btn = e.target.closest('button[data-i]');
+  if (!btn) return;
+  const it = currentSug[+btn.dataset.i];
+  if (!it) return;
+  foodInput.value = `${it.name} (${it.serving})`;
+  document.getElementById('foodCal').value = Math.round(it.cal);
+  document.getElementById('foodP').value = Math.round(it.p);
+  document.getElementById('foodC').value = Math.round(it.c);
+  document.getElementById('foodF').value = Math.round(it.f);
+  sugBox.classList.add('hidden');
+});
+
+async function searchOnline(q) {
+  try {
+    const url = 'https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=6' +
+      '&fields=product_name,brands,nutriments&search_terms=' + encodeURIComponent(q);
+    const r = await fetch(url);
+    if (!r.ok) return;
+    const data = await r.json();
+    offResults = (data.products || [])
+      .filter(p => p.product_name && p.nutriments && p.nutriments['energy-kcal_100g'] != null)
+      .slice(0, 5)
+      .map(p => ({
+        name: p.product_name + (p.brands ? ' — ' + p.brands.split(',')[0].trim() : ''),
+        serving: 'per 100 g',
+        cal: p.nutriments['energy-kcal_100g'] || 0,
+        p: p.nutriments['proteins_100g'] || 0,
+        c: p.nutriments['carbohydrates_100g'] || 0,
+        f: p.nutriments['fat_100g'] || 0,
+      }));
+    offQuery = q;
+    if (foodInput.value.trim().toLowerCase() === q) renderSug(q);
+  } catch { /* offline or blocked — built-in list still works */ }
 }
 
 // goals: save on change
