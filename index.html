@@ -35,7 +35,45 @@
     color: var(--text);
     min-height: 100vh;
   }
-  .wrap { max-width: 640px; margin: 0 auto; padding: 16px 12px 80px; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 16px 12px 80px; position: relative; z-index: 1; }
+
+  /* 3D gear background */
+  .bgfx {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+    perspective: 700px;
+  }
+  .gear {
+    position: absolute;
+    opacity: 0.55;
+    filter: drop-shadow(0 10px 14px rgba(0,0,0,0.7));
+  }
+  #gearBig {
+    width: 360px; height: 360px;
+    top: -170px; right: -120px;
+    animation: gearSpin 26s linear infinite;
+  }
+  #gearSmall {
+    width: 200px; height: 200px;
+    top: 90px; right: 170px;
+    animation: gearSpinRev 15s linear infinite;
+  }
+  #sparks { position: absolute; inset: 0; width: 100%; height: 100%; }
+  @keyframes gearSpin {
+    from { transform: rotateX(26deg) rotateZ(0deg); }
+    to   { transform: rotateX(26deg) rotateZ(360deg); }
+  }
+  @keyframes gearSpinRev {
+    from { transform: rotateX(26deg) rotateZ(375deg); }
+    to   { transform: rotateX(26deg) rotateZ(15deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gear { animation: none; }
+    #sparks { display: none; }
+  }
 
   header { text-align: center; padding: 24px 0 16px; }
   header h1 {
@@ -293,6 +331,46 @@
 </style>
 </head>
 <body>
+<div class="bgfx" aria-hidden="true">
+  <svg id="gearBig" class="gear" viewBox="-100 -100 200 200">
+    <defs>
+      <radialGradient id="gmet" cx="35%" cy="30%" r="80%">
+        <stop offset="0%" stop-color="#4d545e"/>
+        <stop offset="55%" stop-color="#31363d"/>
+        <stop offset="100%" stop-color="#1b1e23"/>
+      </radialGradient>
+      <g id="gearShape">
+        <g fill="url(#gmet)" stroke="#0b0d10" stroke-width="3">
+          <rect x="-11" y="-98" width="22" height="34" rx="4"/>
+          <rect x="-11" y="-98" width="22" height="34" rx="4" transform="rotate(30)"/>
+          <rect x="-11" y="-98" width="22" height="34" rx="4" transform="rotate(60)"/>
+          <rect x="-11" y="-98" width="22" height="34" rx="4" transform="rotate(90)"/>
+          <rect x="-11" y="-98" width="22" height="34" rx="4" transform="rotate(120)"/>
+          <rect x="-11" y="-98" width="22" height="34" rx="4" transform="rotate(150)"/>
+          <rect x="-11" y="-98" width="22" height="34" rx="4" transform="rotate(180)"/>
+          <rect x="-11" y="-98" width="22" height="34" rx="4" transform="rotate(210)"/>
+          <rect x="-11" y="-98" width="22" height="34" rx="4" transform="rotate(240)"/>
+          <rect x="-11" y="-98" width="22" height="34" rx="4" transform="rotate(270)"/>
+          <rect x="-11" y="-98" width="22" height="34" rx="4" transform="rotate(300)"/>
+          <rect x="-11" y="-98" width="22" height="34" rx="4" transform="rotate(330)"/>
+          <circle r="72"/>
+        </g>
+        <circle r="26" fill="#101215" stroke="#0b0d10" stroke-width="3"/>
+        <g fill="#101215" stroke="#0b0d10" stroke-width="2">
+          <circle cx="47" cy="0" r="10"/>
+          <circle cx="-47" cy="0" r="10"/>
+          <circle cx="0" cy="47" r="10"/>
+          <circle cx="0" cy="-47" r="10"/>
+        </g>
+      </g>
+    </defs>
+    <use href="#gearShape"/>
+  </svg>
+  <svg id="gearSmall" class="gear" viewBox="-100 -100 200 200">
+    <use href="#gearShape"/>
+  </svg>
+  <canvas id="sparks"></canvas>
+</div>
 <div class="wrap">
   <header>
     <h1><span class="gear">&#9881;</span> Macros &amp; Maxes</h1>
@@ -783,6 +861,61 @@ function renderMaxes() {
       <button class="btn-small" onclick="deleteLift(${x.id})">✕</button>
     </li>`).join('') : '<li class="empty">No history yet.</li>';
 }
+
+// ---------- background sparks ----------
+(function () {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const canvas = document.getElementById('sparks');
+  const ctx = canvas.getContext('2d');
+  const bigGear = document.getElementById('gearBig');
+  const smallGear = document.getElementById('gearSmall');
+  let parts = [];
+
+  function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
+  addEventListener('resize', resize);
+  resize();
+
+  // sparks fly from where the two gears mesh
+  function emitter() {
+    const b = bigGear.getBoundingClientRect();
+    const s = smallGear.getBoundingClientRect();
+    return {
+      x: (b.left + b.width / 2 + s.left + s.width / 2) / 2,
+      y: (b.top + b.height / 2 + s.top + s.height / 2) / 2,
+    };
+  }
+
+  function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const e = emitter();
+    if (parts.length < 70) {
+      for (let i = 0; i < 2; i++) {
+        if (Math.random() < 0.5) parts.push({
+          x: e.x + (Math.random() * 12 - 6),
+          y: e.y + (Math.random() * 12 - 6),
+          vx: -(1 + Math.random() * 3.4),
+          vy: -(Math.random() * 2.6 - 0.6),
+          life: 1,
+          decay: 0.012 + Math.random() * 0.02,
+        });
+      }
+    }
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineWidth = 1.6;
+    for (const p of parts) {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.07; p.life -= p.decay;
+      const a = Math.max(p.life, 0);
+      ctx.strokeStyle = `rgba(255, ${140 + Math.round(90 * a)}, 40, ${a})`;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - p.vx * 2.2, p.y - p.vy * 2.2);
+      ctx.stroke();
+    }
+    parts = parts.filter(p => p.life > 0);
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
 
 // ---------- util ----------
 function escapeHtml(s) {
