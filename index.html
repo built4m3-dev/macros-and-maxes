@@ -217,10 +217,20 @@
     overflow: hidden;
   }
   .bar > div {
+    position: relative;
     height: 100%;
     background: linear-gradient(90deg, var(--cyan), var(--mag));
     box-shadow: 0 0 10px rgba(0,229,255,0.7);
-    transition: width 0.3s;
+    overflow: hidden;
+    transition: width .65s cubic-bezier(.22, 1, .36, 1);
+  }
+  .bar > div::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 34%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: sweep 2.8s ease-in-out infinite;
   }
   .bar > div.over { background: linear-gradient(90deg, var(--amber), #ff5f3c); box-shadow: 0 0 10px rgba(255,176,32,0.7); }
   .bar > div.done { background: linear-gradient(90deg, var(--green), #00e5a8); box-shadow: 0 0 10px rgba(57,255,136,0.7); }
@@ -306,6 +316,66 @@
     text-transform: uppercase;
     border-bottom: 1px solid rgba(34, 52, 87, 0.6);
     text-shadow: 0 0 8px rgba(255,47,214,0.5);
+  }
+
+  /* ---- motion ---- */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes popIn {
+    0%   { opacity: 0; transform: scale(0.82); }
+    60%  { opacity: 1; transform: scale(1.06); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes rowIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes sweep {
+    0%        { transform: translateX(-120%); }
+    60%, 100% { transform: translateX(420%); }
+  }
+  @keyframes titlePulse {
+    0%, 100% { text-shadow: 0 0 8px var(--cyan), 0 0 28px rgba(0,229,255,0.45), 2px 2px 0 rgba(255,47,214,0.55); }
+    50%      { text-shadow: 0 0 13px var(--cyan), 0 0 44px rgba(0,229,255,0.72), 2px 2px 0 rgba(255,47,214,0.8); }
+  }
+  @keyframes ruleGlow {
+    0%, 100% { opacity: 0.75; }
+    50%      { opacity: 1; }
+  }
+
+  header h1 { animation: titlePulse 4.5s ease-in-out infinite; }
+  header .rule { animation: ruleGlow 4.5s ease-in-out infinite; }
+  header h1, header p { animation-fill-mode: both; }
+  header p { animation: fadeUp .5s .08s both; }
+  .tabs { animation: fadeUp .45s both; }
+  .date-nav { animation: fadeUp .45s .06s both; }
+  .card.anim { animation: fadeUp .5s both; }
+
+  /* interactive feedback */
+  .btn { transition: filter .15s, transform .12s, box-shadow .25s; }
+  .btn:hover { filter: brightness(1.12); box-shadow: 0 0 22px rgba(0,229,255,0.45); }
+  .btn:active { transform: scale(0.985); }
+  .tabs button { transition: color .2s, background .3s, border-color .2s, box-shadow .25s; }
+  .tabs button:hover:not(.active) { color: var(--text); box-shadow: 0 0 16px rgba(0,229,255,0.18); }
+  .date-nav button { transition: box-shadow .2s, color .2s, transform .12s; }
+  .date-nav button:hover { box-shadow: 0 0 14px rgba(0,229,255,0.35); }
+  .date-nav button:active { transform: scale(0.94); }
+  input, select { transition: border-color .2s, box-shadow .25s; }
+  .btn-small { transition: transform .15s, filter .2s; }
+  .btn-small:hover { transform: scale(1.3); filter: brightness(1.3); }
+  ul.items li { transition: background .2s; }
+  ul.items li:hover { background: rgba(0, 229, 255, 0.05); }
+  .suggestions button { transition: background .15s, padding-left .15s; }
+  .suggestions button:hover, .suggestions button:focus { padding-left: 14px; }
+  .item-new { animation: rowIn .45s both; }
+  #repTableBody tr { animation: rowIn .4s both; }
+  .orm-result .big { animation: popIn .55s both; }
+  .orm-result .sub { animation: fadeUp .45s .12s both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
   }
 
   .hidden { display: none; }
@@ -478,13 +548,43 @@ let foods = load('mm_foods', {});           // { "2026-07-19": [ {id,name,cal,p,
 let goals = load('mm_goals', { cal: 2200, p: 160, c: 220, f: 70 });
 let lifts = load('mm_lifts', []);           // [ {id, name, weight, reps, orm, date} ]
 
+// ---------- motion helpers ----------
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// restart the entrance animation on a page's cards, staggered
+function playCards(page) {
+  if (reduceMotion) return;
+  page.querySelectorAll('.card').forEach((el, i) => {
+    el.classList.remove('anim');
+    void el.offsetWidth;              // force reflow so the animation replays
+    el.style.animationDelay = (60 + i * 70) + 'ms';
+    el.classList.add('anim');
+  });
+}
+
+// count from the element's current text up (or down) to data-to
+function countUp(el) {
+  const to = +el.dataset.to;
+  const from = +el.textContent || 0;
+  if (reduceMotion || from === to) { el.textContent = to; return; }
+  const dur = 480, t0 = performance.now();
+  (function step(t) {
+    const k = Math.min((t - t0) / dur, 1);
+    el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3)));
+    if (k < 1) requestAnimationFrame(step);
+  })(performance.now());
+}
+
 // ---------- tabs ----------
 function showTab(tab) {
   const macros = tab === 'macros';
-  document.getElementById('pageMacros').classList.toggle('hidden', !macros);
-  document.getElementById('pageMaxes').classList.toggle('hidden', macros);
+  const pageMacros = document.getElementById('pageMacros');
+  const pageMaxes = document.getElementById('pageMaxes');
+  pageMacros.classList.toggle('hidden', !macros);
+  pageMaxes.classList.toggle('hidden', macros);
   document.getElementById('tabMacros').classList.toggle('active', macros);
   document.getElementById('tabMaxes').classList.toggle('active', !macros);
+  playCards(macros ? pageMacros : pageMaxes);
 }
 
 // ---------- macros ----------
@@ -515,6 +615,7 @@ document.getElementById('foodForm').addEventListener('submit', e => {
   };
   (foods[day] = foods[day] || []).push(entry);
   save('mm_foods', foods);
+  newFoodId = entry.id;
   e.target.reset();
   document.getElementById('foodName').focus();
   renderMacros();
@@ -527,12 +628,17 @@ function deleteFood(day, id) {
   renderMacros();
 }
 
-function statBar(name, val, goal, unit) {
+// numbers count up from whatever is on screen, bars fill from their old width
+let shownTotals = { cal: 0, p: 0, c: 0, f: 0 };
+let newFoodId = null;
+
+function statBar(key, name, val, goal, unit) {
   const pct = goal > 0 ? Math.min(100, (val / goal) * 100) : 0;
   const cls = goal > 0 && val > goal ? 'over' : (pct >= 100 ? 'done' : '');
+  const from = Math.round(shownTotals[key] || 0);
   return `<div class="stat">
-    <div class="top"><span class="name">${name}</span><span class="nums">${Math.round(val)} / ${goal} ${unit}</span></div>
-    <div class="bar"><div class="${cls}" style="width:${pct}%"></div></div>
+    <div class="top"><span class="name">${name}</span><span class="nums"><span class="cur" data-to="${Math.round(val)}">${from}</span> / ${goal} ${unit}</span></div>
+    <div class="bar"><div class="${cls}" data-pct="${pct}" style="width:0%"></div></div>
   </div>`;
 }
 
@@ -542,15 +648,25 @@ function renderMacros() {
   const t = list.reduce((a, x) => ({ cal: a.cal + x.cal, p: a.p + x.p, c: a.c + x.c, f: a.f + x.f }),
     { cal: 0, p: 0, c: 0, f: 0 });
 
-  document.getElementById('totals').innerHTML =
-    statBar('Calories', t.cal, goals.cal, 'kcal') +
-    statBar('Protein', t.p, goals.p, 'g') +
-    statBar('Carbs', t.c, goals.c, 'g') +
-    statBar('Fat', t.f, goals.f, 'g');
+  const totals = document.getElementById('totals');
+  totals.innerHTML =
+    statBar('cal', 'Calories', t.cal, goals.cal, 'kcal') +
+    statBar('p', 'Protein', t.p, goals.p, 'g') +
+    statBar('c', 'Carbs', t.c, goals.c, 'g') +
+    statBar('f', 'Fat', t.f, goals.f, 'g');
+  shownTotals = t;
 
+  // next frame, so the widths animate from 0 instead of being painted full
+  requestAnimationFrame(() => {
+    totals.querySelectorAll('.bar > div').forEach(d => { d.style.width = d.dataset.pct + '%'; });
+    totals.querySelectorAll('.cur').forEach(countUp);
+  });
+
+  const justAdded = newFoodId;
+  newFoodId = null;
   const ul = document.getElementById('foodList');
   ul.innerHTML = list.length ? list.map(x => `
-    <li>
+    <li class="${x.id === justAdded ? 'item-new' : ''}">
       <div>
         <div class="item-name">${escapeHtml(x.name)}</div>
         <div class="item-sub">P ${x.p}g &middot; C ${x.c}g &middot; F ${x.f}g</div>
@@ -764,8 +880,10 @@ document.getElementById('liftForm').addEventListener('submit', e => {
   if (!name || !weight || !reps) return;
 
   const orm = estimate1RM(weight, reps);
-  lifts.unshift({ id: Date.now(), name, weight, reps, orm, date: todayStr() });
+  const entry = { id: Date.now(), name, weight, reps, orm, date: todayStr() };
+  lifts.unshift(entry);
   save('mm_lifts', lifts);
+  newLiftId = entry.id;
   showOrm(name, weight, reps, orm);
   renderMaxes();
 });
@@ -780,10 +898,17 @@ function showOrm(name, weight, reps, orm) {
   body.innerHTML = Array.from({ length: 12 }, (_, i) => {
     const r = i + 1;
     const w = weightForReps(orm, r);
-    return `<tr><td>${r}</td><td class="w">${round5(w)} lbs</td><td>${Math.round((w / orm) * 100)}%</td></tr>`;
+    return `<tr style="animation-delay:${120 + i * 40}ms"><td>${r}</td><td class="w">${round5(w)} lbs</td><td>${Math.round((w / orm) * 100)}%</td></tr>`;
   }).join('');
   document.getElementById('repTableTitle').textContent = `Rep Maxes — ${name}`;
-  document.getElementById('repTableCard').style.display = '';
+  const card = document.getElementById('repTableCard');
+  card.style.display = '';
+  if (!reduceMotion) {
+    card.classList.remove('anim');
+    void card.offsetWidth;
+    card.style.animationDelay = '0ms';
+    card.classList.add('anim');
+  }
 }
 
 function deleteLift(id) {
@@ -792,7 +917,11 @@ function deleteLift(id) {
   renderMaxes();
 }
 
+let newLiftId = null;
+
 function renderMaxes() {
+  const justAdded = newLiftId;
+  newLiftId = null;
   // PRs: best estimated 1RM per exercise
   const best = {};
   lifts.forEach(x => {
@@ -811,7 +940,7 @@ function renderMaxes() {
     </li>`).join('') : '<li class="empty">No lifts yet — log one above.</li>';
 
   document.getElementById('liftList').innerHTML = lifts.length ? lifts.map(x => `
-    <li>
+    <li class="${x.id === justAdded ? 'item-new' : ''}">
       <div>
         <div class="item-name">${escapeHtml(x.name)}</div>
         <div class="item-sub">${x.weight} lbs &times; ${x.reps} &middot; ${x.date}</div>
@@ -880,6 +1009,7 @@ function escapeHtml(s) {
 
 renderMacros();
 renderMaxes();
+playCards(document.getElementById('pageMacros'));
 </script>
 </body>
 </html>
